@@ -1,7 +1,6 @@
 import configparser
 import pandas as pd
 from sqlalchemy import create_engine
-from openai import OpenAI
 
 # Read database configuration
 config = configparser.ConfigParser()
@@ -63,16 +62,42 @@ def get_openai_api_key():
     config.read('openai_config.ini')
     return config['openai']['api_key']
 
-# Initialize OpenAI client after getting the API key
-def send_to_chatgpt(prompt, content):
-    api_key = get_openai_api_key()
-    client = OpenAI(api_key=api_key)
-    response = client.chat.completions.create(model="gpt-4o",
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": content}
-        ])
-    return response.choices[0].message.content
+def get_model_and_api():
+    config = configparser.ConfigParser()
+    config.read('openai_config.ini')
+    use_anthropic = config.has_option('anthropic', 'use') and config['anthropic'].get('use', 'false').lower() == 'true'
+    if use_anthropic:
+        api_key = config['anthropic']['api_key']
+        model = config['anthropic'].get('model', 'claude-3-opus-20240229')
+        return 'anthropic', api_key, model
+    else:
+        api_key = config['openai']['api_key']
+        model = config['openai'].get('model', 'gpt-3.5-turbo')
+        return 'openai', api_key, model
+
+# Unified function to send to LLM
+
+def send_to_llm(prompt, content):
+    provider, api_key, model = get_model_and_api()
+    if provider == 'openai':
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(model=model,
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": content}
+            ])
+        return response.choices[0].message.content
+    else:
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        message = client.messages.create(
+            model=model,
+            max_tokens=1024,
+            system=prompt,
+            messages=[{"role": "user", "content": content}]
+        )
+        return message.content[0].text
 
 # Compose summary output for the selected table
 table_summary = []
@@ -88,10 +113,10 @@ for col in df.columns:
     table_summary.append(str(value_counts))
 summary_text = '\n'.join(table_summary)
 
-# Send summary to ChatGPT for classification and description
-chatgpt_prompt = (
+# Send summary to LLM for classification and description
+llm_prompt = (
     "You are a data analyst. Given the following summary statistics of a database table, classify the type of data and provide a brief description of what this table might represent."
 )
-chatgpt_response = send_to_chatgpt(chatgpt_prompt, summary_text)
-print("\nChatGPT classification and description:")
-print(chatgpt_response)
+llm_response = send_to_llm(llm_prompt, summary_text)
+print(f"\nLLM ({get_model_and_api()[2]}) classification and description:")
+print(llm_response)
