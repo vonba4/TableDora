@@ -1,0 +1,9 @@
+[database]
+host = localhost
+port = 5432
+database = Add_your_database_name_here
+user = Add_your_db_username_here
+password = Add_your_db_password_here
+; Note: Replace the placeholders with your actual database credentials and rename file to .ini extension
+; Ensure that the database server is running and accessible.
+; You can also add additional configuration options as needed.

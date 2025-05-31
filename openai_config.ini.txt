@@ -1,0 +1,3 @@
+[openai]
+api_key = Add your OpenAI API key here
+; Note: Replace the placeholders with your actual OpenAI API key and rename file to .ini extension
