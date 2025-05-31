@@ -50,5 +50,3 @@ TableDora is a Python tool for exploring and summarizing PostgreSQL database tab
 - Supports both OpenAI and Anthropic APIs; select provider and model in `openai_config.ini`.
 - Requires a working internet connection for LLM features.
 
----
-For more details, see `.github/copilot-instructions.md`.
